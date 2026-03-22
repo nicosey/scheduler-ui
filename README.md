@@ -2,8 +2,6 @@
 
 A native desktop GUI for managing your crontab — view, add, toggle, delete, and run jobs, with a live run history.
 
-![Dark themed window showing a list of cron jobs with status indicators](screenshot.png)
-
 ## Features
 
 - Reads your crontab on launch and writes changes back on every action
@@ -37,7 +35,7 @@ cargo build --release
 ## Usage
 
 | Action | How |
-|---|---|
+| --- | --- |
 | Expand a job | Click anywhere on the job row |
 | Run a job now | Click ▶ on the right of any row |
 | Enable / disable | Click ◉ / ○ — writes back to crontab immediately |
@@ -47,7 +45,7 @@ cargo build --release
 
 Cron expression format: `minute hour day-of-month month day-of-week`
 
-```
+```sh
 # Every day at 07:00
 0 7 * * *   /path/to/script.sh
 
@@ -108,7 +106,7 @@ zip -r "cron-manager-macos.zip" "Cron Manager.app"
 
 ## Project structure
 
-```
+```text
 src/
   main.rs     — all app code (data models, crontab I/O, egui UI)
 Cargo.toml
@@ -117,7 +115,7 @@ Cargo.toml
 ## Dependencies
 
 | Crate | Purpose |
-|---|---|
+| --- | --- |
 | `eframe` | Native window + immediate-mode GUI (egui) |
 | `chrono` | Timestamps and duration formatting |
 | `serde` + `serde_json` | Serialisation (run logs) |
