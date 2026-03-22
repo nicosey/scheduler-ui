@@ -1,14 +1,16 @@
-# Cron Manager
+# Scheduler UI
 
-A native desktop GUI for managing your crontab — view, add, toggle, delete, and run jobs, with a live run history.
+A native macOS desktop GUI for managing scheduled jobs — supports both **cron** and **launchd**. View, add, toggle, delete, and run jobs, with a live run history.
 
 ## Features
 
-- Reads your crontab on launch and writes changes back on every action
-- Disabled jobs are preserved as commented lines (`# schedule command`) so they can be re-enabled
-- Non-job lines (env vars, plain comments) are kept intact on write-back
+- Reads your crontab and `~/Library/LaunchAgents/` on launch; writes changes back immediately
+- Cron: disabled jobs are preserved as commented lines (`# schedule command`) so they can be re-enabled
+- Launchd: toggle loads/unloads via `launchctl`; delete removes the plist file
+- Source badges on every row — **CRON** or **LAUNCHD** — so you always know what's driving a job
+- Add new jobs to either backend from the same dialog
 - Run any job immediately with the ▶ button — output and duration are captured in the run history
-- `--mock` flag for trying the app without touching your real crontab
+- `--mock` flag for trying the app without touching your real crontab or launchd agents
 
 ## Requirements
 
@@ -18,18 +20,18 @@ A native desktop GUI for managing your crontab — view, add, toggle, delete, an
 ## Build & run
 
 ```sh
-git clone https://github.com/yourname/cron-manager
+git clone https://github.com/nicosey/cron-manager
 cd cron-manager
 
-# Run in development mode (reads your real crontab)
+# Run in development mode (reads your real crontab + LaunchAgents)
 cargo run
 
-# Run with mock data (no crontab access needed)
+# Run with mock data (no system access needed)
 cargo run -- --mock
 
 # Optimised build
 cargo build --release
-./target/release/cron-manager
+./target/release/scheduler-ui
 ```
 
 ## Usage
@@ -38,12 +40,15 @@ cargo build --release
 | --- | --- |
 | Expand a job | Click anywhere on the job row |
 | Run a job now | Click ▶ on the right of any row |
-| Enable / disable | Click ◉ / ○ — writes back to crontab immediately |
-| Delete | Click ✕ — writes back to crontab immediately |
-| Add a job | Click **+ New Job** in the top-right |
-| Reload from crontab | Click **↻ Refresh** |
+| Enable / disable | Click ◉ / ○ — writes back immediately |
+| Delete | Click ✕ — writes back immediately |
+| Add a job | Click **+ New Job**, choose Cron or Launchd |
+| Reload | Click **↻ Refresh** |
 
-Cron expression format: `minute hour day-of-month month day-of-week`
+### Adding a cron job
+
+Choose **Cron** in the source selector. Schedule uses standard cron expression format:
+`minute hour day-of-month month day-of-week`
 
 ```sh
 # Every day at 07:00
@@ -56,34 +61,36 @@ Cron expression format: `minute hour day-of-month month day-of-week`
 30 8 * * 1-5  /usr/local/bin/my-job
 ```
 
-## Release (macOS app bundle)
+### Adding a launchd agent
 
-To produce a standalone `.app` you can distribute:
+Choose **Launchd** in the source selector. Enter a reverse-DNS label (e.g. `com.user.my-task`) — this becomes the plist filename in `~/Library/LaunchAgents/`. The same cron schedule format is used and converted to `StartCalendarInterval` automatically.
+
+## Release (macOS app bundle)
 
 ```sh
 # 1. Build release binary
 cargo build --release
 
 # 2. Create the bundle structure
-mkdir -p "Cron Manager.app/Contents/MacOS"
-mkdir -p "Cron Manager.app/Contents/Resources"
+mkdir -p "Scheduler UI.app/Contents/MacOS"
+mkdir -p "Scheduler UI.app/Contents/Resources"
 
 # 3. Copy binary
-cp target/release/cron-manager "Cron Manager.app/Contents/MacOS/cron-manager"
+cp target/release/scheduler-ui "Scheduler UI.app/Contents/MacOS/scheduler-ui"
 
 # 4. Write Info.plist
-cat > "Cron Manager.app/Contents/Info.plist" << 'EOF'
+cat > "Scheduler UI.app/Contents/Info.plist" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key>
-  <string>Cron Manager</string>
+  <string>Scheduler UI</string>
   <key>CFBundleExecutable</key>
-  <string>cron-manager</string>
+  <string>scheduler-ui</string>
   <key>CFBundleIdentifier</key>
-  <string>com.yourname.cron-manager</string>
+  <string>com.yourname.scheduler-ui</string>
   <key>CFBundleVersion</key>
   <string>0.1.0</string>
   <key>CFBundlePackageType</key>
@@ -95,20 +102,20 @@ cat > "Cron Manager.app/Contents/Info.plist" << 'EOF'
 EOF
 
 # 5. Open it
-open "Cron Manager.app"
+open "Scheduler UI.app"
 ```
 
 To distribute, zip the `.app`:
 
 ```sh
-zip -r "cron-manager-macos.zip" "Cron Manager.app"
+zip -r "scheduler-ui-macos.zip" "Scheduler UI.app"
 ```
 
 ## Project structure
 
 ```text
 src/
-  main.rs     — all app code (data models, crontab I/O, egui UI)
+  main.rs     — all app code (data models, cron/launchd I/O, egui UI)
 Cargo.toml
 ```
 
@@ -118,4 +125,5 @@ Cargo.toml
 | --- | --- |
 | `eframe` | Native window + immediate-mode GUI (egui) |
 | `chrono` | Timestamps and duration formatting |
+| `plist` | Parsing `~/Library/LaunchAgents/*.plist` files |
 | `serde` + `serde_json` | Serialisation (run logs) |
