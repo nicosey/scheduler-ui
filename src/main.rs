@@ -749,17 +749,23 @@ impl SchedulerApp {
                                     run_id = Some(job.id);
                                 }
 
-                                ui.vertical(|ui| {
-                                    let last = job.last_run.map(|dt| format!("Last: {}", time_ago(&dt)))
-                                        .unwrap_or_else(|| "Last: —".into());
-                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
-                                        ui.label(egui::RichText::new(last).size(11.0).color(Theme::TEXT_DIM));
-                                    });
-                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
-                                        let next = if job.enabled { "Next: scheduled" } else { "Next: —" };
-                                        ui.label(egui::RichText::new(next).size(11.0).color(Theme::TEXT_DIM));
-                                    });
-                                });
+                                ui.add_space(16.0);
+                                ui.allocate_ui_with_layout(
+                                    egui::vec2(110.0, 36.0),
+                                    egui::Layout::top_down(egui::Align::Max),
+                                    |ui| {
+                                        ui.label(egui::RichText::new("LAST RUN").size(9.0).color(Theme::TEXT_DIM));
+                                        let last = job.last_run
+                                            .map(|dt| time_ago(&dt))
+                                            .unwrap_or_else(|| "—".into());
+                                        let last_color = match &job.last_status {
+                                            Some(RunStatus::Success) => Theme::SUCCESS,
+                                            Some(RunStatus::Error)   => Theme::ERROR,
+                                            _                        => Theme::TEXT_MUTED,
+                                        };
+                                        ui.label(egui::RichText::new(last).size(12.0).color(last_color));
+                                    },
+                                );
                             });
                         });
 
