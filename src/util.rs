@@ -38,16 +38,48 @@ pub fn human_schedule(expr: &str) -> String {
     let (min, hour, dom, _mon, dow) = (parts[0], parts[1], parts[2], parts[3], parts[4]);
     let day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    if dom == "*" && dow == "*" {
-        return format!("Daily at {:0>2}:{:0>2}", hour, min);
+    // Every minute
+    if min == "*" && hour == "*" && dom == "*" && dow == "*" {
+        return "Every minute".into();
     }
+    // Every N minutes: */N * * * *
+    if let Some(n) = min.strip_prefix("*/") {
+        if hour == "*" && dom == "*" && dow == "*" {
+            return format!("Every {} minutes", n);
+        }
+    }
+    // Hourly: 0 * * * *  or  M * * * *
+    if hour == "*" && dom == "*" && dow == "*" {
+        if min == "0" {
+            return "Hourly".into();
+        }
+        return format!("Hourly at :{}", min);
+    }
+    // Every N hours: 0 */N * * *
+    if let Some(n) = hour.strip_prefix("*/") {
+        if dom == "*" && dow == "*" {
+            let at = if min == "0" { String::new() } else { format!(" :{}", min) };
+            return format!("Every {} hours{}", n, at);
+        }
+    }
+    // Weekly: specific weekday(s), any dom
     if dom == "*" && dow != "*" {
         let days: String = dow.split(',')
             .filter_map(|d| d.parse::<usize>().ok().and_then(|i| day_names.get(i)))
             .copied()
             .collect::<Vec<_>>()
             .join(", ");
-        return format!("{} at {:0>2}:{:0>2}", days, hour, min);
+        let time = if hour == "*" { String::new() } else { format!(" at {:0>2}:{:0>2}", hour, min) };
+        return format!("{}{}", days, time);
+    }
+    // Daily: any dom, any dow, fixed hour and minute
+    if dom == "*" && dow == "*" {
+        return format!("Daily at {:0>2}:{:0>2}", hour, min);
+    }
+    // Monthly: specific dom
+    if dow == "*" {
+        let time = if hour == "*" { String::new() } else { format!(" at {:0>2}:{:0>2}", hour, min) };
+        return format!("Monthly on day {}{}", dom, time);
     }
     expr.to_string()
 }
