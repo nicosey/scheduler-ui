@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::cron::write_crontab;
 use crate::launchd::{launchctl_load, launchctl_unload};
 use crate::models::{CronJob, JobSource};
@@ -13,6 +15,7 @@ pub struct SchedulerApp {
     pub new_label: String,
     pub new_source_is_launchd: bool,
     pub status_msg: Option<String>,
+    pub expanded_jobs: HashSet<usize>,
 }
 
 impl SchedulerApp {
@@ -28,6 +31,7 @@ impl SchedulerApp {
             new_label: String::new(),
             new_source_is_launchd: false,
             status_msg: None,
+            expanded_jobs: HashSet::new(),
         }
     }
 

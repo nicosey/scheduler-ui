@@ -15,14 +15,11 @@ impl SchedulerApp {
         let mut run_id    = None;
         let mut delete_id = None;
 
+        let mut toggle_expand_id: Option<usize> = None;
+
         egui::ScrollArea::vertical().show(ui, |ui| {
             for job in &self.jobs {
-                let collapse_id = ui.make_persistent_id(job.id);
-                let mut collapse = egui::collapsing_header::CollapsingState::load_with_default_open(
-                    ui.ctx(), collapse_id, false,
-                );
-                let is_open = collapse.is_open();
-                let mut toggle_expand = false;
+                let is_open = self.expanded_jobs.contains(&job.id);
 
                 let bg           = if is_open { Theme::SELECTED } else { Theme::PANEL };
                 let stroke_color = if is_open { Theme::ACCENT } else { Theme::BORDER };
@@ -71,7 +68,7 @@ impl SchedulerApp {
                                     .stroke(egui::Stroke::new(1.0, Theme::BORDER))
                                     .corner_radius(6.0).min_size(egui::vec2(28.0, 28.0))
                                 ).on_hover_text("Show details").clicked() {
-                                    toggle_expand = true;
+                                    toggle_expand_id = Some(job.id);
                                 }
 
                                 if ui.add(egui::Button::new(egui::RichText::new("✕").size(12.0).strong().color(egui::Color32::WHITE))
@@ -224,14 +221,17 @@ impl SchedulerApp {
                         }
                     });
 
-                if toggle_expand {
-                    collapse.set_open(!is_open);
-                }
-                collapse.store(ui.ctx());
-
                 ui.add_space(4.0);
             }
         });
+
+        if let Some(id) = toggle_expand_id {
+            if self.expanded_jobs.contains(&id) {
+                self.expanded_jobs.remove(&id);
+            } else {
+                self.expanded_jobs.insert(id);
+            }
+        }
 
         if let Some(id) = toggle_id {
             let source = self.jobs.iter().find(|j| j.id == id).map(|j| j.source.clone());
